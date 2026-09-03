@@ -1,0 +1,88 @@
+name: Deployment pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    env:
+      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install backend dependencies
+        run: npm install
+
+      - name: Check backend style
+        run: npm run lint
+
+      - name: Run backend tests
+        run: npm run test
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm install
+
+      - name: Check frontend style
+        run: cd frontend && npm run lint
+
+      - name: Run build (backend + frontend)
+        run: npm run build
+
+  deploy:
+    needs: [build_and_test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment
+        run: curl ${{ secrets.RENDER_DEPLOY_HOOK }}
+        if: ${{ github.event_name == 'push' && !contains(join(github.event.commits.*.message, ','), '#skip') }}
+
+  notify_success:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord notification (success)
+        if: success()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: Success
+          title: '✅ Phonebook Deployment Successful!'
+          description: 'A new version deployed to production'
+          color: 0x00ff00
+
+  notify_failure:
+    needs: [build_and_test, deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Discord notification (failure)
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: Failure
+          title: '❌ Phonebook Build Failed!'
+          description: 'The pipeline encountered an error'
+          color: 0xff0000
+
+  tag_release:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+        if: ${{ github.event_name == 'push' && !contains(join(github.event.commits.*.message, ','), '#skip') }}
