@@ -38,6 +38,12 @@ jobs:
       - name: Run build (backend + frontend)
         run: npm run build
 
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+
   deploy:
     needs: [build_and_test]
     runs-on: ubuntu-latest
@@ -56,8 +62,8 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           status: Success
-          title: '✅ Phonebook Deployment Successful!'
-          description: 'A new version deployed to production'
+          content: '✅ Phonebook Deployment Successful! A new version deployed to production'
+          title: 'Deployment details'
           color: 0x00ff00
 
   notify_failure:
@@ -70,8 +76,8 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           status: Failure
-          title: '❌ Phonebook Build Failed!'
-          description: 'The pipeline encountered an error'
+          content: '❌ Phonebook Build Failed! The pipeline encountered an error'
+          title: 'Failure details'
           color: 0xff0000
 
   tag_release:

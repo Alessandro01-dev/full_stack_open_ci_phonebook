@@ -4,9 +4,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "start:test": "cross-env NODE_ENV=test PORT=3002 node index.js",
     "dev": "nodemon index.js",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm run build",
     "test": "cross-env NODE_ENV=test node --test",
+    "test:e2e": "playwright test",
     "lint": "eslint ."
   },
   "author": "Alessandro Aronica",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "cross-env": "^7.0.3",
     "eslint": "^10.2.1",
