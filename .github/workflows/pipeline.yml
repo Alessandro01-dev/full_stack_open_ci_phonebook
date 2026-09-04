@@ -35,6 +35,9 @@ jobs:
       - name: Check frontend style
         run: cd frontend && npm run lint
 
+      - name: Run frontend tests
+        run: cd frontend && npm run test
+
       - name: Run build (backend + frontend)
         run: npm run build
 
